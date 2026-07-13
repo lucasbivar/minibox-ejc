@@ -1,0 +1,23 @@
+{
+  "name": "@minibox/shared",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tipos, enums e constantes compartilhados entre backend e frontend",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json && cp dist-esm-package.json dist/esm/package.json",
+    "dev": "tsc -p tsconfig.cjs.json --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

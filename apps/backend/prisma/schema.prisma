@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PaymentCondition {
+  ON_CREDIT
+  IMMEDIATE
+}
+
+enum PaymentMethod {
+  CASH
+  PIX
+  CARD
+}
+
+enum OrderStatus {
+  ACTIVE
+  CANCELLED
+}
+
+model Team {
+  id           String        @id @default(uuid())
+  name         String        @unique
+  createdAt    DateTime      @default(now()) @map("created_at")
+  deletedAt    DateTime?     @map("deleted_at")
+  participants Participant[]
+  orders       Order[]
+
+  @@map("teams")
+}
+
+model Participant {
+  id          String        @id @default(uuid())
+  name        String
+  phone       String?
+  teamId      String        @map("team_id")
+  team        Team          @relation(fields: [teamId], references: [id])
+  photoUrl    String?       @map("photo_url")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  deletedAt   DateTime?     @map("deleted_at")
+  orders      Order[]
+  settlements Settlement[]
+
+  @@index([teamId])
+  @@index([name])
+  @@map("participants")
+}
+
+model MenuItem {
+  id               String            @id @default(uuid())
+  number           Int               @unique
+  description      String
+  price            Decimal           @db.Decimal(10, 2)
+  stock            Int               @default(0)
+  available        Boolean           @default(true)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  deletedAt        DateTime?         @map("deleted_at")
+  orderItems       OrderItem[]
+  stockAdjustments StockAdjustment[]
+
+  @@map("menu_items")
+}
+
+model StockAdjustment {
+  id             String   @id @default(uuid())
+  menuItemId     String   @map("menu_item_id")
+  menuItem       MenuItem @relation(fields: [menuItemId], references: [id])
+  quantityDelta  Int      @map("quantity_delta")
+  reason         String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("stock_adjustments")
+}
+
+model Order {
+  id              String            @id @default(uuid())
+  participantId   String            @map("participant_id")
+  participant     Participant       @relation(fields: [participantId], references: [id])
+  teamId          String            @map("team_id")
+  team            Team              @relation(fields: [teamId], references: [id])
+  dateTime        DateTime          @default(now()) @map("date_time")
+  condition       PaymentCondition
+  paymentMethod   PaymentMethod?    @map("payment_method")
+  totalAmount     Decimal           @db.Decimal(10, 2) @map("total_amount")
+  status          OrderStatus       @default(ACTIVE)
+  operatorId      String?           @map("operator_id")
+  operator        SystemUser?       @relation(fields: [operatorId], references: [id])
+  items           OrderItem[]
+
+  @@index([participantId])
+  @@index([teamId])
+  @@index([status])
+  @@index([dateTime])
+  @@map("orders")
+}
+
+model OrderItem {
+  id            String   @id @default(uuid())
+  orderId       String   @map("order_id")
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId    String   @map("menu_item_id")
+  menuItem      MenuItem @relation(fields: [menuItemId], references: [id])
+  quantity      Int
+  unitPrice     Decimal  @db.Decimal(10, 2) @map("unit_price")
+  subtotal      Decimal  @db.Decimal(10, 2)
+  dateTime      DateTime @default(now()) @map("date_time")
+
+  @@index([orderId])
+  @@index([menuItemId])
+  @@map("order_items")
+}
+
+model Settlement {
+  id            String        @id @default(uuid())
+  participantId String        @map("participant_id")
+  participant   Participant   @relation(fields: [participantId], references: [id])
+  amount        Decimal       @db.Decimal(10, 2)
+  paymentMethod PaymentMethod @map("payment_method")
+  dateTime      DateTime      @default(now()) @map("date_time")
+
+  @@index([participantId])
+  @@map("settlements")
+}
+
+model SystemUser {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  orders       Order[]
+
+  @@map("system_users")
+}

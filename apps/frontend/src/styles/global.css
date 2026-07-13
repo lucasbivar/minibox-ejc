@@ -1,0 +1,26 @@
+:root {
+  --viz-sequential: #2a78d6;
+  --viz-sequential-track: #e1e0d9;
+  --viz-cat-1: #2a78d6;
+  --viz-cat-2: #1baf7a;
+  --viz-cat-3: #eda100;
+  --viz-cat-red: #e34948;
+  --viz-ink-primary: #0b0b0b;
+  --viz-ink-secondary: #52514e;
+  --viz-ink-muted: #898781;
+  --viz-gridline: #e1e0d9;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+}

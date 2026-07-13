@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: minibox_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: minibox
+      POSTGRES_PASSWORD: minibox
+      POSTGRES_DB: minibox
+    ports:
+      - "5433:5432"
+    volumes:
+      - minibox_postgres_data:/var/lib/postgresql/data
+      - ./docker/init-test-db.sh:/docker-entrypoint-initdb.d/init-test-db.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U minibox"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  minibox_postgres_data:
