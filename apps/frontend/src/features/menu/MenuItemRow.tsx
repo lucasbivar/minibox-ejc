@@ -1,7 +1,7 @@
 import { ActionIcon, Alert, Badge, Button, Group, NumberInput, Paper, Switch, Table, TextInput, Text } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import { notifications } from "@mantine/notifications";
-import type { MenuItemDto } from "@minibox/shared";
+import type { MenuItemDto, StockSeverity } from "@minibox/shared";
 import { IconAlertCircle, IconTrash } from "@tabler/icons-react";
 import { useState } from "react";
 import { getApiErrorMessage } from "../../api/client";
@@ -10,17 +10,19 @@ import { useMenuItemMutations } from "./useMenuItems";
 
 type Mode = "view" | "edit" | "restock";
 
-function stockBadgeColor(stock: number): string {
-  if (stock <= 0) return "red";
-  if (stock <= 10) return "yellow";
-  return "green";
-}
+const SEVERITY_BADGE_COLOR: Record<StockSeverity, string> = {
+  critical: "red",
+  warning: "yellow",
+  ok: "green",
+};
 
 export function MenuItemRow({ item }: { item: MenuItemDto }) {
   const { update, restock, setAvailability, deleteItem } = useMenuItemMutations();
   const [mode, setMode] = useState<Mode>("view");
   const [description, setDescription] = useState(item.description);
   const [price, setPrice] = useState<number | string>(item.price);
+  const [warningThreshold, setWarningThreshold] = useState<number | string>(item.warningThreshold);
+  const [criticalThreshold, setCriticalThreshold] = useState<number | string>(item.criticalThreshold);
   const [newStock, setNewStock] = useState<number | string>(item.stock);
   const [reason, setReason] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -28,12 +30,24 @@ export function MenuItemRow({ item }: { item: MenuItemDto }) {
   function resetAndClose() {
     setMode("view");
     setErrorMessage(null);
+    setDescription(item.description);
+    setPrice(item.price);
+    setWarningThreshold(item.warningThreshold);
+    setCriticalThreshold(item.criticalThreshold);
   }
 
   function handleSaveEdit() {
     setErrorMessage(null);
     update.mutate(
-      { id: item.id, input: { description, price: Number(price) } },
+      {
+        id: item.id,
+        input: {
+          description,
+          price: Number(price),
+          warningThreshold: Number(warningThreshold),
+          criticalThreshold: Number(criticalThreshold),
+        },
+      },
       { onSuccess: resetAndClose, onError: (error) => setErrorMessage(getApiErrorMessage(error)) },
     );
   }
@@ -104,7 +118,37 @@ export function MenuItemRow({ item }: { item: MenuItemDto }) {
           )}
         </Table.Td>
         <Table.Td>
-          <Badge color={stockBadgeColor(item.stock)}>{item.stock}</Badge>
+          <Badge color={SEVERITY_BADGE_COLOR[item.severity]}>{item.stock}</Badge>
+        </Table.Td>
+        <Table.Td>
+          {mode === "edit" ? (
+            <NumberInput
+              aria-label={`Limite amarelo de ${item.description}`}
+              min={0}
+              value={warningThreshold}
+              onChange={setWarningThreshold}
+              w={100}
+            />
+          ) : (
+            <Badge color="yellow" variant="light">
+              {item.warningThreshold}
+            </Badge>
+          )}
+        </Table.Td>
+        <Table.Td>
+          {mode === "edit" ? (
+            <NumberInput
+              aria-label={`Limite vermelho de ${item.description}`}
+              min={0}
+              value={criticalThreshold}
+              onChange={setCriticalThreshold}
+              w={100}
+            />
+          ) : (
+            <Badge color="red" variant="light">
+              {item.criticalThreshold}
+            </Badge>
+          )}
         </Table.Td>
         <Table.Td>
           <Switch
@@ -150,7 +194,7 @@ export function MenuItemRow({ item }: { item: MenuItemDto }) {
       </Table.Tr>
       {mode === "restock" && (
         <Table.Tr>
-          <Table.Td colSpan={6}>
+          <Table.Td colSpan={8}>
             <Paper withBorder p="md" radius="md">
               <Group align="end">
                 <NumberInput
@@ -177,7 +221,7 @@ export function MenuItemRow({ item }: { item: MenuItemDto }) {
       )}
       {errorMessage && mode !== "view" && (
         <Table.Tr>
-          <Table.Td colSpan={6}>
+          <Table.Td colSpan={8}>
             <Alert color="red" icon={<IconAlertCircle size={18} />} role="alert">
               {errorMessage}
             </Alert>

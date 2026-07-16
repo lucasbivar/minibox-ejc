@@ -1,10 +1,14 @@
-import { LOW_STOCK_WARNING_THRESHOLD, type StockSeverity } from "@minibox/shared";
+import type { StockSeverity } from "@minibox/shared";
 
-export function computeStockSeverity(stock: number): StockSeverity {
-  if (stock <= 0) {
+export function computeStockSeverity(
+  stock: number,
+  warningThreshold: number,
+  criticalThreshold: number,
+): StockSeverity {
+  if (stock <= criticalThreshold) {
     return "critical";
   }
-  if (stock <= LOW_STOCK_WARNING_THRESHOLD) {
+  if (stock <= warningThreshold) {
     return "warning";
   }
   return "ok";

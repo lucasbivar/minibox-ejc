@@ -40,6 +40,41 @@ describe("POST /menu-items", () => {
 
     expect(response.status).toBe(400);
   });
+
+  it("usa limiares padrão (10 e 0) quando não informados", async () => {
+    const { authHeader } = await createAuthenticatedUser();
+
+    const response = await request(app)
+      .post("/menu-items")
+      .set("Authorization", authHeader)
+      .send({ number: 9, description: "Coxinha", price: 6, stock: 5 });
+
+    expect(response.status).toBe(201);
+    expect(response.body).toMatchObject({ warningThreshold: 10, criticalThreshold: 0, severity: "warning" });
+  });
+
+  it("permite customizar os limiares de alerta (amarelo) e crítico (vermelho)", async () => {
+    const { authHeader } = await createAuthenticatedUser();
+
+    const response = await request(app)
+      .post("/menu-items")
+      .set("Authorization", authHeader)
+      .send({ number: 10, description: "Água", price: 3, stock: 8, warningThreshold: 20, criticalThreshold: 5 });
+
+    expect(response.status).toBe(201);
+    expect(response.body).toMatchObject({ warningThreshold: 20, criticalThreshold: 5, severity: "warning" });
+  });
+
+  it("rejeita limite crítico maior ou igual ao limite de alerta", async () => {
+    const { authHeader } = await createAuthenticatedUser();
+
+    const response = await request(app)
+      .post("/menu-items")
+      .set("Authorization", authHeader)
+      .send({ number: 11, description: "Suco", price: 4, stock: 8, warningThreshold: 5, criticalThreshold: 5 });
+
+    expect(response.status).toBe(400);
+  });
 });
 
 describe("GET /menu-items", () => {
@@ -113,6 +148,31 @@ describe("PATCH /menu-items/:id", () => {
     expect(response.body.description).toBe("Novo");
     expect(response.body.price).toBe(7.5);
   });
+
+  it("permite customizar os limiares de amarelo e vermelho de um item existente", async () => {
+    const { authHeader } = await createAuthenticatedUser();
+    const item = await createTestMenuItem({ stock: 8, warningThreshold: 10, criticalThreshold: 0 });
+
+    const response = await request(app)
+      .patch(`/menu-items/${item.id}`)
+      .set("Authorization", authHeader)
+      .send({ warningThreshold: 15, criticalThreshold: 6 });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ warningThreshold: 15, criticalThreshold: 6, severity: "warning" });
+  });
+
+  it("rejeita atualização que deixaria o limite crítico maior ou igual ao de alerta", async () => {
+    const { authHeader } = await createAuthenticatedUser();
+    const item = await createTestMenuItem({ warningThreshold: 10, criticalThreshold: 0 });
+
+    const response = await request(app)
+      .patch(`/menu-items/${item.id}`)
+      .set("Authorization", authHeader)
+      .send({ criticalThreshold: 10 });
+
+    expect(response.status).toBe(400);
+  });
 });
 
 describe("POST /menu-items/:id/restock", () => {
@@ -157,6 +217,19 @@ describe("GET /menu-items/alerts", () => {
     expect(response.body.items[0].severity).toBe("critical");
     expect(response.body.items[1].severity).toBe("warning");
     expect(response.body.items[2].severity).toBe("ok");
+    expect(response.body.criticalCount).toBe(1);
+    expect(response.body.warningCount).toBe(1);
+  });
+
+  it("respeita limiares customizados por item ao calcular a severidade", async () => {
+    const { authHeader } = await createAuthenticatedUser();
+    // Estoque de 8 seria "ok" com os limiares padrão, mas este item usa limiares mais altos.
+    await createTestMenuItem({ number: 4, stock: 8, warningThreshold: 20, criticalThreshold: 10 });
+
+    const response = await request(app).get("/menu-items/alerts").set("Authorization", authHeader);
+
+    expect(response.status).toBe(200);
+    expect(response.body.items[0]).toMatchObject({ number: 4, severity: "critical" });
     expect(response.body.criticalCount).toBe(1);
   });
 });

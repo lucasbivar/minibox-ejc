@@ -1,5 +1,6 @@
 import { Alert, Button, Group, NumberInput, Paper, ScrollArea, Text, TextInput, Title } from "@mantine/core";
 import { IconAlertCircle, IconPlus, IconSearch } from "@tabler/icons-react";
+import { normalizeSearchText } from "@minibox/shared";
 import { type FormEvent, useMemo, useState } from "react";
 import { formatCurrency } from "../../lib/format";
 import { useCartStore } from "../../stores/cartStore";
@@ -17,10 +18,10 @@ export function ItemPicker() {
 
   const filteredItems = useMemo(() => {
     if (!items) return [];
-    const term = search.trim().toLowerCase();
+    const term = normalizeSearchText(search);
     if (!term) return items;
     return items.filter(
-      (item) => item.description.toLowerCase().includes(term) || String(item.number).includes(term),
+      (item) => normalizeSearchText(item.description).includes(term) || String(item.number).includes(term),
     );
   }, [items, search]);
 

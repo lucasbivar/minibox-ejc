@@ -23,6 +23,7 @@ export const DASHBOARD_POLLING_INTERVAL_MS = 20_000;
 export const BRAZIL_PHONE_REGEX = /^\+55 \(\d{2}\) \d{4,5}-\d{4}$/;
 
 export const LOW_STOCK_WARNING_THRESHOLD = 10;
+export const DEFAULT_CRITICAL_STOCK_THRESHOLD = 0;
 
 export const DAY_PERIOD_LABELS: Record<"MANHA" | "TARDE" | "NOITE", string> = {
   MANHA: "Manhã",

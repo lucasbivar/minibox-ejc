@@ -13,6 +13,9 @@ const BASE_ITEMS = [
     description: "Coxinha",
     price: 6,
     stock: 50,
+    warningThreshold: 10,
+    criticalThreshold: 0,
+    severity: "ok",
     available: true,
     createdAt: new Date().toISOString(),
   },
@@ -22,6 +25,9 @@ const BASE_ITEMS = [
     description: "Refrigerante",
     price: 5,
     stock: 0,
+    warningThreshold: 10,
+    criticalThreshold: 0,
+    severity: "critical",
     available: true,
     createdAt: new Date().toISOString(),
   },
@@ -35,16 +41,34 @@ describe("MenuPage", () => {
 
     expect(await screen.findByText("Coxinha")).toBeInTheDocument();
     const refrigeranteRow = screen.getByText("Refrigerante").closest("tr")!;
-    expect(within(refrigeranteRow).getByText("0")).toBeInTheDocument();
+    // "0" aparece tanto no badge de estoque quanto no limite vermelho (também 0 neste item).
+    expect(within(refrigeranteRow).getAllByText("0").length).toBeGreaterThan(0);
   });
 
   it("cadastra um novo item de cardápio (RF-01)", async () => {
     server.use(
       http.get("*/menu-items", () => HttpResponse.json(BASE_ITEMS)),
       http.post("*/menu-items", async ({ request }) => {
-        const body = (await request.json()) as { number: number; description: string; price: number; stock: number };
-        expect(body).toEqual({ number: 3, description: "Água", price: 4, stock: 30 });
-        return HttpResponse.json({ id: "3", ...body, available: true, createdAt: new Date().toISOString() }, { status: 201 });
+        const body = (await request.json()) as {
+          number: number;
+          description: string;
+          price: number;
+          stock: number;
+          warningThreshold: number;
+          criticalThreshold: number;
+        };
+        expect(body).toEqual({
+          number: 3,
+          description: "Água",
+          price: 4,
+          stock: 30,
+          warningThreshold: 10,
+          criticalThreshold: 0,
+        });
+        return HttpResponse.json(
+          { id: "3", ...body, severity: "ok", available: true, createdAt: new Date().toISOString() },
+          { status: 201 },
+        );
       }),
     );
 
@@ -84,6 +108,37 @@ describe("MenuPage", () => {
     await user.click(screen.getByRole("button", { name: /confirmar/i }));
 
     await waitFor(() => expect(screen.queryByLabelText("Novo valor do estoque")).not.toBeInTheDocument());
+  });
+
+  it("permite customizar os limites de alerta (amarelo) e crítico (vermelho) de um item", async () => {
+    server.use(
+      http.get("*/menu-items", () => HttpResponse.json(BASE_ITEMS)),
+      http.patch("*/menu-items/1", async ({ request }) => {
+        const body = (await request.json()) as {
+          description: string;
+          price: number;
+          warningThreshold: number;
+          criticalThreshold: number;
+        };
+        expect(body).toEqual({ description: "Coxinha", price: 6, warningThreshold: 15, criticalThreshold: 3 });
+        return HttpResponse.json({ ...BASE_ITEMS[0], ...body, severity: "warning" });
+      }),
+    );
+
+    const user = userEvent.setup();
+    renderWithProviders(<MenuPage />);
+    const coxinhaRow = (await screen.findByText("Coxinha")).closest("tr")!;
+
+    await user.click(within(coxinhaRow).getByRole("button", { name: /^editar$/i }));
+    const warningInput = within(coxinhaRow).getByLabelText(/limite amarelo de coxinha/i);
+    await user.clear(warningInput);
+    await user.type(warningInput, "15");
+    const criticalInput = within(coxinhaRow).getByLabelText(/limite vermelho de coxinha/i);
+    await user.clear(criticalInput);
+    await user.type(criticalInput, "3");
+    await user.click(within(coxinhaRow).getByRole("button", { name: /^salvar$/i }));
+
+    await waitFor(() => expect(within(coxinhaRow).queryByRole("button", { name: /^salvar$/i })).not.toBeInTheDocument());
   });
 
   it("marca um item como indisponível", async () => {

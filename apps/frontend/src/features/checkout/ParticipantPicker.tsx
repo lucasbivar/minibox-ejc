@@ -2,6 +2,7 @@ import { Badge, Button, Group, Paper, Select, Text, Title } from "@mantine/core"
 import { IconUserPlus } from "@tabler/icons-react";
 import { useState } from "react";
 import { getApiErrorMessage } from "../../api/client";
+import { accentInsensitiveFilter } from "../../lib/selectFilter";
 import { useCartStore } from "../../stores/cartStore";
 import { ParticipantForm } from "../teams-participants/ParticipantForm";
 import { useParticipantMutations, useParticipantsQuery } from "../teams-participants/useParticipants";
@@ -35,6 +36,7 @@ export function ParticipantPicker() {
         label="Equipe de serviço"
         placeholder="Selecione ou busque a equipe…"
         searchable
+        filter={accentInsensitiveFilter}
         data={teamOptions}
         value={team?.id ?? null}
         onChange={(value) => {
@@ -62,6 +64,7 @@ export function ParticipantPicker() {
                 label="Participante"
                 placeholder="Busque pelo nome…"
                 searchable
+                filter={accentInsensitiveFilter}
                 nothingFoundMessage="Nenhum participante encontrado."
                 data={participantOptions}
                 value={null}

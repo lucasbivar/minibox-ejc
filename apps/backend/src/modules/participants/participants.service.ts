@@ -1,5 +1,5 @@
 import type { Participant, Team } from "@prisma/client";
-import type { ParticipantDto, PaginatedResponse } from "@minibox/shared";
+import { normalizeSearchText, type ParticipantDto, type PaginatedResponse } from "@minibox/shared";
 import { ConflictError, NotFoundError } from "../../shared/errors";
 import { prisma } from "../../shared/prisma";
 import type {
@@ -41,21 +41,23 @@ export async function listParticipants(
   const where = {
     deletedAt: null,
     teamId: query.teamId,
-    name: query.search ? { contains: query.search, mode: "insensitive" as const } : undefined,
   };
 
-  const [total, participants] = await prisma.$transaction([
-    prisma.participant.count({ where }),
-    prisma.participant.findMany({
-      where,
-      include: { team: true },
-      orderBy: { name: "asc" },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-  ]);
+  let participants = await prisma.participant.findMany({
+    where,
+    include: { team: true },
+    orderBy: { name: "asc" },
+  });
 
-  return { items: participants.map(toParticipantDto), total, page, pageSize };
+  if (query.search) {
+    const term = normalizeSearchText(query.search);
+    participants = participants.filter((participant) => normalizeSearchText(participant.name).includes(term));
+  }
+
+  const total = participants.length;
+  const paged = participants.slice((page - 1) * pageSize, page * pageSize);
+
+  return { items: paged.map(toParticipantDto), total, page, pageSize };
 }
 
 export async function getParticipantById(id: string): Promise<ParticipantWithTeam> {

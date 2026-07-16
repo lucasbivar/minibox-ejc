@@ -40,6 +40,8 @@ export function MenuPage() {
                 <Table.Th>Descrição</Table.Th>
                 <Table.Th>Preço</Table.Th>
                 <Table.Th>Estoque</Table.Th>
+                <Table.Th>Limite amarelo</Table.Th>
+                <Table.Th>Limite vermelho</Table.Th>
                 <Table.Th>Disponibilidade</Table.Th>
                 <Table.Th>Ações</Table.Th>
               </Table.Tr>

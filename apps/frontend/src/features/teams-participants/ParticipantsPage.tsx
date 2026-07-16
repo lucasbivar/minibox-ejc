@@ -2,6 +2,7 @@ import { Button, Group, Loader, Pagination, Paper, Select, Stack, Table, Text, T
 import { IconPlus, IconSearch } from "@tabler/icons-react";
 import { useState } from "react";
 import { getApiErrorMessage } from "../../api/client";
+import { accentInsensitiveFilter } from "../../lib/selectFilter";
 import { ParticipantForm } from "./ParticipantForm";
 import { ParticipantRow } from "./ParticipantRow";
 import { useParticipantMutations, useParticipantsQuery } from "./useParticipants";
@@ -87,6 +88,7 @@ export function ParticipantsPage() {
             placeholder="Todas as equipes"
             searchable
             clearable
+            filter={accentInsensitiveFilter}
             data={teamOptions}
             value={teamFilter}
             onChange={(value) => {

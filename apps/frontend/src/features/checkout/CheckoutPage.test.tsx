@@ -76,8 +76,10 @@ describe("CheckoutPage", () => {
         return HttpResponse.json(
           {
             id: "o1",
+            orderNumber: 42,
             participantId: "p1",
             participantName: "Maria Silva",
+            participantPhone: null,
             teamId: "t1",
             teamName: "Bandinha",
             dateTime: new Date().toISOString(),
@@ -109,7 +111,8 @@ describe("CheckoutPage", () => {
     await user.click(screen.getByRole("button", { name: /finalizar pedido/i }));
     await user.click(await screen.findByRole("button", { name: /sim, finalizar/i }));
 
-    expect(await screen.findByText(/pedido registrado para maria silva/i)).toBeInTheDocument();
+    expect(await screen.findByText(/pedido nº 42 registrado para maria silva/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /baixar comprovante/i })).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByText("Coxinha")).not.toBeInTheDocument());
   });
 

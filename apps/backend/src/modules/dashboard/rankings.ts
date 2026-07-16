@@ -90,6 +90,44 @@ export function getTeamConsumption(financials: ParticipantFinancial[]): TeamCons
   return [...byTeam.values()].sort((a, b) => b.totalConsumed - a.totalConsumed);
 }
 
+// Times sem nenhum pedido não aparecem em `teamConsumption` (não há financials para eles);
+// aqui completamos com zero para que também concorram ao ranking de "quem menos consumiu".
+function withAllTeams(
+  teamConsumption: TeamConsumptionDto[],
+  allTeams: { id: string; name: string }[],
+): TeamConsumptionDto[] {
+  const byTeamId = new Map(teamConsumption.map((team) => [team.teamId, team]));
+  return allTeams.map(
+    (team) =>
+      byTeamId.get(team.id) ?? {
+        teamId: team.id,
+        teamName: team.name,
+        totalConsumed: 0,
+        totalOutstanding: 0,
+      },
+  );
+}
+
+export function getTopConsumingTeams(
+  teamConsumption: TeamConsumptionDto[],
+  allTeams: { id: string; name: string }[],
+  limit = DEFAULT_RANKING_LIMIT,
+): TeamConsumptionDto[] {
+  return withAllTeams(teamConsumption, allTeams)
+    .sort((a, b) => b.totalConsumed - a.totalConsumed)
+    .slice(0, limit);
+}
+
+export function getLeastConsumingTeams(
+  teamConsumption: TeamConsumptionDto[],
+  allTeams: { id: string; name: string }[],
+  limit = DEFAULT_RANKING_LIMIT,
+): TeamConsumptionDto[] {
+  return withAllTeams(teamConsumption, allTeams)
+    .sort((a, b) => a.totalConsumed - b.totalConsumed)
+    .slice(0, limit);
+}
+
 export function getCreditToPaidConversionRate(financials: ParticipantFinancial[]): number {
   const totalOnCredit = financials.reduce((sum, f) => sum + f.onCredit, 0);
   const totalSettled = financials.reduce((sum, f) => sum + f.settled, 0);

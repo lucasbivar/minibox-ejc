@@ -49,7 +49,8 @@ describe("DashboardPage", () => {
     mockDashboardHandlers();
     renderWithProviders(<DashboardPage />);
 
-    expect(await screen.findByText("Maria")).toBeInTheDocument();
+    // "Maria" aparece duas vezes: no novo resumo (sem valor) e no ranking detalhado de devedores.
+    expect((await screen.findAllByText("Maria")).length).toBeGreaterThan(0);
     expect(screen.getByText("João")).toBeInTheDocument();
     expect(screen.getByText("Ana")).toBeInTheDocument();
   });

@@ -1,5 +1,11 @@
 import type { MenuItem, Order, OrderItem, Participant, Prisma, Team } from "@prisma/client";
-import { OrderStatus, PaymentCondition, type OrderDto, type PaginatedResponse } from "@minibox/shared";
+import {
+  normalizeSearchText,
+  OrderStatus,
+  PaymentCondition,
+  type OrderDto,
+  type PaginatedResponse,
+} from "@minibox/shared";
 import { ConflictError, NotFoundError } from "../../shared/errors";
 import { roundCurrency, toNumber } from "../../shared/decimal";
 import { prisma } from "../../shared/prisma";
@@ -24,8 +30,10 @@ export const ORDER_INCLUDE = {
 export function toOrderDto(order: OrderWithRelations): OrderDto {
   return {
     id: order.id,
+    orderNumber: order.orderNumber,
     participantId: order.participantId,
     participantName: order.participant.name,
+    participantPhone: order.participant.phone,
     teamId: order.teamId,
     teamName: order.team.name,
     dateTime: order.dateTime.toISOString(),
@@ -152,20 +160,22 @@ export async function listOrders(query: ListOrdersQuery): Promise<PaginatedRespo
     participantId: query.participantId,
     condition: query.condition,
     status: query.status,
-    participant: query.search ? { name: { contains: query.search, mode: "insensitive" } } : undefined,
   };
 
-  const [total, orders] = await prisma.$transaction([
-    prisma.order.count({ where }),
-    prisma.order.findMany({
-      where,
-      include: ORDER_INCLUDE,
-      orderBy: { dateTime: "desc" },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-  ]);
+  let orders = await prisma.order.findMany({
+    where,
+    include: ORDER_INCLUDE,
+    orderBy: { dateTime: "desc" },
+  });
 
-  return { items: orders.map(toOrderDto), total, page, pageSize };
+  if (query.search) {
+    const term = normalizeSearchText(query.search);
+    orders = orders.filter((order) => normalizeSearchText(order.participant.name).includes(term));
+  }
+
+  const total = orders.length;
+  const paged = orders.slice((page - 1) * pageSize, page * pageSize);
+
+  return { items: paged.map(toOrderDto), total, page, pageSize };
 }
 

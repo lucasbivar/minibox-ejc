@@ -64,6 +64,7 @@ describe("GET /dashboard/top-debtors e top-payers", () => {
 describe("GET /dashboard/insights", () => {
   it("traz item campeão, distribuição por forma de pagamento e conversão fiado->pago (RF-26)", async () => {
     const { authHeader } = await createAuthenticatedUser();
+    const emptyTeam = await createTestTeam({ name: "Equipe Sem Pedidos" });
     const participant = await createTestParticipant();
     const item = await createTestMenuItem({ description: "Coxinha", price: 5, stock: 1000 });
 
@@ -100,6 +101,11 @@ describe("GET /dashboard/insights", () => {
     );
     expect(response.body.creditToPaidConversionRate).toBe(0.5);
     expect(response.body.teamConsumption[0].totalConsumed).toBe(30);
+    expect(response.body.topConsumingTeams[0].totalConsumed).toBe(30);
+    expect(response.body.leastConsumingTeams.map((t: { teamId: string }) => t.teamId)).toContain(emptyTeam.id);
+    expect(response.body.leastConsumingTeams.find((t: { teamId: string }) => t.teamId === emptyTeam.id)).toMatchObject(
+      { totalConsumed: 0 },
+    );
     expect(response.body.salesByPeriod.length).toBeGreaterThan(0);
     expect(response.body.salesByPeriod[0]).toMatchObject({
       day: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),

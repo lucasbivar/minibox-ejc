@@ -52,16 +52,18 @@ model Participant {
 }
 
 model MenuItem {
-  id               String            @id @default(uuid())
-  number           Int               @unique
-  description      String
-  price            Decimal           @db.Decimal(10, 2)
-  stock            Int               @default(0)
-  available        Boolean           @default(true)
-  createdAt        DateTime          @default(now()) @map("created_at")
-  deletedAt        DateTime?         @map("deleted_at")
-  orderItems       OrderItem[]
-  stockAdjustments StockAdjustment[]
+  id                String            @id @default(uuid())
+  number            Int               @unique
+  description       String
+  price             Decimal           @db.Decimal(10, 2)
+  stock             Int               @default(0)
+  warningThreshold  Int               @default(10) @map("warning_threshold")
+  criticalThreshold Int               @default(0) @map("critical_threshold")
+  available         Boolean           @default(true)
+  createdAt         DateTime          @default(now()) @map("created_at")
+  deletedAt         DateTime?         @map("deleted_at")
+  orderItems        OrderItem[]
+  stockAdjustments  StockAdjustment[]
 
   @@map("menu_items")
 }
@@ -79,6 +81,7 @@ model StockAdjustment {
 
 model Order {
   id              String            @id @default(uuid())
+  orderNumber     Int               @unique @default(autoincrement()) @map("order_number")
   participantId   String            @map("participant_id")
   participant     Participant       @relation(fields: [participantId], references: [id])
   teamId          String            @map("team_id")

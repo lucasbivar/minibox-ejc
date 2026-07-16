@@ -1,4 +1,4 @@
-import { OrderStatus, PaymentCondition, PaymentMethod } from "@minibox/shared";
+import { normalizeSearchText, OrderStatus, PaymentCondition, PaymentMethod } from "@minibox/shared";
 import type {
   BestSellingItemDto,
   DashboardInsightsDto,
@@ -16,8 +16,10 @@ import type { ListDebtorsQuerySchema } from "./dashboard.schema";
 import { fetchParticipantFinancials } from "./financials";
 import {
   getCreditToPaidConversionRate,
+  getLeastConsumingTeams,
   getTeamConsumption,
   getTopConsumers,
+  getTopConsumingTeams,
   getTopDebtors,
   getTopOrders,
   getTopPayers,
@@ -29,6 +31,7 @@ const DEBTORS_DEFAULT_PAGE_SIZE = 20;
 const DEBTORS_MAX_PAGE_SIZE = 100;
 
 const BEST_SELLING_LIMIT = 10;
+const TEAM_CONSUMPTION_RANKING_LIMIT = 5;
 
 export async function getDashboardSummary(): Promise<DashboardSummaryDto> {
   const activeOrders = await prisma.order.aggregate({
@@ -74,8 +77,8 @@ export async function getDebtors(query: ListDebtorsQuerySchema): Promise<Paginat
     debtors = debtors.filter((financial) => financial.teamId === query.teamId);
   }
   if (query.search) {
-    const term = query.search.toLowerCase();
-    debtors = debtors.filter((financial) => financial.participantName.toLowerCase().includes(term));
+    const term = normalizeSearchText(query.search);
+    debtors = debtors.filter((financial) => normalizeSearchText(financial.participantName).includes(term));
   }
 
   const sortBy = query.sortBy ?? "value";
@@ -202,18 +205,23 @@ async function getSalesByPeriod(): Promise<SalesByHourEntryDto[]> {
 export async function getDashboardInsights(): Promise<DashboardInsightsDto> {
   const financials = await fetchParticipantFinancials();
 
-  const [{ byQuantity, byRevenue }, paymentMethodDistribution, salesByPeriod] = await Promise.all([
+  const [allTeams, { byQuantity, byRevenue }, paymentMethodDistribution, salesByPeriod] = await Promise.all([
+    prisma.team.findMany({ where: { deletedAt: null }, select: { id: true, name: true } }),
     getBestSellingItems(),
     getPaymentMethodDistribution(),
     getSalesByPeriod(),
   ]);
+
+  const teamConsumption = getTeamConsumption(financials);
 
   return {
     topConsumers: getTopConsumers(financials),
     bestSellingItemsByQuantity: byQuantity,
     bestSellingItemsByRevenue: byRevenue,
     championItem: byQuantity[0] ?? null,
-    teamConsumption: getTeamConsumption(financials),
+    teamConsumption,
+    topConsumingTeams: getTopConsumingTeams(teamConsumption, allTeams, TEAM_CONSUMPTION_RANKING_LIMIT),
+    leastConsumingTeams: getLeastConsumingTeams(teamConsumption, allTeams, TEAM_CONSUMPTION_RANKING_LIMIT),
     paymentMethodDistribution,
     salesByPeriod,
     creditToPaidConversionRate: getCreditToPaidConversionRate(financials),

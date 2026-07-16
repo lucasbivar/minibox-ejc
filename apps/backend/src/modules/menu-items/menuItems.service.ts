@@ -1,6 +1,6 @@
 import type { MenuItem } from "@prisma/client";
 import type { MenuItemDto, StockAlertsResponse } from "@minibox/shared";
-import { ConflictError, NotFoundError } from "../../shared/errors";
+import { ConflictError, NotFoundError, ValidationError } from "../../shared/errors";
 import { toNumber } from "../../shared/decimal";
 import { prisma } from "../../shared/prisma";
 import type {
@@ -18,6 +18,9 @@ export function toMenuItemDto(item: MenuItem): MenuItemDto {
     description: item.description,
     price: toNumber(item.price),
     stock: item.stock,
+    warningThreshold: item.warningThreshold,
+    criticalThreshold: item.criticalThreshold,
+    severity: computeStockSeverity(item.stock, item.warningThreshold, item.criticalThreshold),
     available: item.available,
     createdAt: item.createdAt.toISOString(),
   };
@@ -47,6 +50,8 @@ export async function createMenuItem(input: CreateMenuItemInput): Promise<MenuIt
       description: input.description,
       price: input.price,
       stock: input.stock,
+      warningThreshold: input.warningThreshold,
+      criticalThreshold: input.criticalThreshold,
     },
   });
 
@@ -62,10 +67,16 @@ async function findMenuItemOrThrow(id: string): Promise<MenuItem> {
 }
 
 export async function updateMenuItem(id: string, input: UpdateMenuItemInput): Promise<MenuItemDto> {
-  await findMenuItemOrThrow(id);
+  const existing = await findMenuItemOrThrow(id);
 
   if (input.number !== undefined) {
     await assertNumberAvailable(input.number, id);
+  }
+
+  const warningThreshold = input.warningThreshold ?? existing.warningThreshold;
+  const criticalThreshold = input.criticalThreshold ?? existing.criticalThreshold;
+  if (criticalThreshold >= warningThreshold) {
+    throw new ValidationError("O limite crítico (vermelho) deve ser menor que o limite de alerta (amarelo).");
   }
 
   const item = await prisma.menuItem.update({
@@ -74,6 +85,8 @@ export async function updateMenuItem(id: string, input: UpdateMenuItemInput): Pr
       number: input.number,
       description: input.description,
       price: input.price,
+      warningThreshold: input.warningThreshold,
+      criticalThreshold: input.criticalThreshold,
     },
   });
 
@@ -124,12 +137,10 @@ export async function getStockAlerts(): Promise<StockAlertsResponse> {
     orderBy: { stock: "asc" },
   });
 
-  const alertItems = items.map((item) => ({
-    ...toMenuItemDto(item),
-    severity: computeStockSeverity(item.stock),
-  }));
+  const alertItems = items.map((item) => toMenuItemDto(item));
 
   const criticalCount = alertItems.filter((item) => item.severity === "critical").length;
+  const warningCount = alertItems.filter((item) => item.severity === "warning").length;
 
-  return { items: alertItems, criticalCount };
+  return { items: alertItems, criticalCount, warningCount };
 }

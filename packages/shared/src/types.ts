@@ -16,25 +16,27 @@ export interface ParticipantDto {
   createdAt: string;
 }
 
+export type StockSeverity = "critical" | "warning" | "ok";
+
 export interface MenuItemDto {
   id: string;
   number: number;
   description: string;
   price: number;
   stock: number;
+  warningThreshold: number;
+  criticalThreshold: number;
+  severity: StockSeverity;
   available: boolean;
   createdAt: string;
 }
 
-export type StockSeverity = "critical" | "warning" | "ok";
-
-export interface StockAlertItemDto extends MenuItemDto {
-  severity: StockSeverity;
-}
+export type StockAlertItemDto = MenuItemDto;
 
 export interface StockAlertsResponse {
   items: StockAlertItemDto[];
   criticalCount: number;
+  warningCount: number;
 }
 
 export interface OrderItemInput {
@@ -61,8 +63,10 @@ export interface OrderItemDto {
 
 export interface OrderDto {
   id: string;
+  orderNumber: number;
   participantId: string;
   participantName: string;
+  participantPhone: string | null;
   teamId: string;
   teamName: string;
   dateTime: string;
@@ -182,6 +186,8 @@ export interface DashboardInsightsDto {
   bestSellingItemsByRevenue: BestSellingItemDto[];
   championItem: BestSellingItemDto | null;
   teamConsumption: TeamConsumptionDto[];
+  topConsumingTeams: TeamConsumptionDto[];
+  leastConsumingTeams: TeamConsumptionDto[];
   paymentMethodDistribution: PaymentMethodDistributionDto[];
   salesByPeriod: SalesByHourEntryDto[];
   creditToPaidConversionRate: number;

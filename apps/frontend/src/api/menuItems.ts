@@ -6,12 +6,16 @@ export interface CreateMenuItemInput {
   description: string;
   price: number;
   stock: number;
+  warningThreshold?: number;
+  criticalThreshold?: number;
 }
 
 export interface UpdateMenuItemInput {
   number?: number;
   description?: string;
   price?: number;
+  warningThreshold?: number;
+  criticalThreshold?: number;
 }
 
 export interface RestockMenuItemInput {

@@ -20,6 +20,7 @@ import { IconSearch } from "@tabler/icons-react";
 import { useState } from "react";
 import { getApiErrorMessage } from "../../api/client";
 import { formatCurrency, formatDateTime } from "../../lib/format";
+import { accentInsensitiveFilter } from "../../lib/selectFilter";
 import { useTeamsQuery } from "../teams-participants/useTeams";
 import { useCancelOrderMutation, useOrdersQuery } from "./useOrders";
 
@@ -135,6 +136,7 @@ export function OrdersPage() {
             placeholder="Todas as equipes"
             searchable
             clearable
+            filter={accentInsensitiveFilter}
             data={teamOptions}
             value={teamFilter}
             onChange={resetPageAnd(setTeamFilter)}

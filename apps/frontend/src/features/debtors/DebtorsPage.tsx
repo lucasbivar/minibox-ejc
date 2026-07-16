@@ -17,6 +17,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTeamsQuery } from "../teams-participants/useTeams";
 import { formatCurrency } from "../../lib/format";
+import { accentInsensitiveFilter } from "../../lib/selectFilter";
 import { useDebtorsQuery } from "./useDebtors";
 
 const PAGE_SIZE = 20;
@@ -103,6 +104,7 @@ export function DebtorsPage() {
             placeholder="Todas as equipes"
             searchable
             clearable
+            filter={accentInsensitiveFilter}
             data={teamOptions}
             value={teamFilter}
             onChange={(value) => {

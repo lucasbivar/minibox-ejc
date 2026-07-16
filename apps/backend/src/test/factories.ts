@@ -55,6 +55,8 @@ export async function createTestMenuItem(
     description?: string;
     price?: number;
     stock?: number;
+    warningThreshold?: number;
+    criticalThreshold?: number;
     available?: boolean;
     deletedAt?: Date | null;
   } = {},
@@ -65,6 +67,8 @@ export async function createTestMenuItem(
       description: overrides.description ?? "Item de Teste",
       price: overrides.price ?? 5,
       stock: overrides.stock ?? 10,
+      warningThreshold: overrides.warningThreshold ?? 10,
+      criticalThreshold: overrides.criticalThreshold ?? 0,
       available: overrides.available ?? true,
       deletedAt: overrides.deletedAt ?? null,
     },

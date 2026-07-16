@@ -1,12 +1,14 @@
 import { Alert, Button, Group, Paper, Stack, Text, Title } from "@mantine/core";
 import { modals } from "@mantine/modals";
+import type { OrderDto } from "@minibox/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { IconAlertCircle, IconCheck, IconRefresh } from "@tabler/icons-react";
+import { IconAlertCircle, IconCheck, IconDownload, IconRefresh } from "@tabler/icons-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { getApiErrorMessage } from "../../api/client";
 import { createOrder } from "../../api/orders";
 import { formatCurrency } from "../../lib/format";
+import { downloadOrderReceipt } from "../../lib/orderReceipt";
 import { getCartTotal, useCartStore } from "../../stores/cartStore";
 import { CartTable } from "./CartTable";
 import { ItemPicker } from "./ItemPicker";
@@ -24,20 +26,23 @@ export function CheckoutPage() {
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
+  const [completedOrder, setCompletedOrder] = useState<OrderDto | null>(null);
 
   const finalizeMutation = useMutation({
     mutationFn: createOrder,
     onSuccess: (order) => {
       setErrorMessage(null);
       setConfirmationMessage(
-        `Pedido registrado para ${order.participantName}. Total: ${formatCurrency(order.totalAmount)}.`,
+        `Pedido nº ${order.orderNumber} registrado para ${order.participantName}. Total: ${formatCurrency(order.totalAmount)}.`,
       );
+      setCompletedOrder(order);
       reset();
       queryClient.invalidateQueries({ queryKey: ["menu-items"] });
       queryClient.invalidateQueries({ queryKey: ["stock-alerts"] });
     },
     onError: (error) => {
       setConfirmationMessage(null);
+      setCompletedOrder(null);
       setErrorMessage(getApiErrorMessage(error, "Não foi possível finalizar o pedido."));
     },
   });
@@ -87,6 +92,7 @@ export function CheckoutPage() {
         reset();
         setErrorMessage(null);
         setConfirmationMessage(null);
+        setCompletedOrder(null);
       },
     });
   }
@@ -116,7 +122,20 @@ export function CheckoutPage() {
             transition={{ duration: 0.2 }}
           >
             <Alert color="green" icon={<IconCheck size={18} />}>
-              {confirmationMessage}
+              <Group justify="space-between" align="center" wrap="wrap">
+                <Text size="sm">{confirmationMessage}</Text>
+                {completedOrder && (
+                  <Button
+                    size="xs"
+                    variant="white"
+                    color="green"
+                    leftSection={<IconDownload size={14} />}
+                    onClick={() => downloadOrderReceipt(completedOrder)}
+                  >
+                    Baixar comprovante (PDF)
+                  </Button>
+                )}
+              </Group>
             </Alert>
           </motion.div>
         )}

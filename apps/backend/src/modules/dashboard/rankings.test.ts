@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import { buildParticipantFinancial } from "./financials";
 import {
   getCreditToPaidConversionRate,
+  getLeastConsumingTeams,
   getTeamConsumption,
   getTopConsumers,
+  getTopConsumingTeams,
   getTopDebtors,
   getTopOrders,
   getTopPayers,
@@ -100,6 +102,27 @@ describe("getTeamConsumption", () => {
       { teamId: "t1", teamName: "Boa Vontade", totalConsumed: 230, totalOutstanding: 90 },
       { teamId: "t2", teamName: "Ordem", totalConsumed: 0, totalOutstanding: 0 },
     ]);
+  });
+});
+
+describe("getTopConsumingTeams e getLeastConsumingTeams", () => {
+  const allTeams = [
+    { id: "t1", name: "Boa Vontade" },
+    { id: "t2", name: "Ordem" },
+    { id: "t3", name: "Sem Pedidos" },
+  ];
+  const teamConsumption = getTeamConsumption(financials);
+
+  it("inclui times sem nenhum pedido com consumo zero", () => {
+    expect(getLeastConsumingTeams(teamConsumption, allTeams, 5).map((t) => t.teamId)).toContain("t3");
+  });
+
+  it("ordena do maior para o menor consumo, limitando ao top N", () => {
+    expect(getTopConsumingTeams(teamConsumption, allTeams, 2).map((t) => t.teamId)).toEqual(["t1", "t2"]);
+  });
+
+  it("ordena do menor para o maior consumo, limitando ao top N", () => {
+    expect(getLeastConsumingTeams(teamConsumption, allTeams, 2).map((t) => t.teamId)).toEqual(["t2", "t3"]);
   });
 });
 

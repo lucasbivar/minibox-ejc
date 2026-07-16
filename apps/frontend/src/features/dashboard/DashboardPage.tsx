@@ -1,6 +1,7 @@
 import { Carousel } from "@mantine/carousel";
 import { Divider, Group, Paper, SimpleGrid, Stack, Text, Title } from "@mantine/core";
 import { useElementSize } from "@mantine/hooks";
+import type { BestSellingItemDto, RankingEntryDto, TeamConsumptionDto } from "@minibox/shared";
 import Autoplay from "embla-carousel-autoplay";
 import { useRef } from "react";
 import type { ReactNode } from "react";
@@ -14,6 +15,7 @@ import { useDashboardInsights, useDashboardSummary, useTopDebtors, useTopOrders,
 
 const SLIDE_HEIGHT = "100%";
 const AUTOPLAY_DELAY_MS = 5000;
+const TOP_LIST_LIMIT = 5;
 
 function Slide({ children }: { children: ReactNode }) {
   return (
@@ -21,6 +23,24 @@ function Slide({ children }: { children: ReactNode }) {
       {children}
     </Paper>
   );
+}
+
+function teamsToRankingEntries(teams?: TeamConsumptionDto[]): RankingEntryDto[] {
+  return (teams ?? []).map((team) => ({
+    participantId: team.teamId,
+    participantName: team.teamName,
+    teamName: "",
+    value: team.totalConsumed,
+  }));
+}
+
+function productsToRankingEntries(items?: BestSellingItemDto[]): RankingEntryDto[] {
+  return (items ?? []).slice(0, TOP_LIST_LIMIT).map((item) => ({
+    participantId: item.menuItemId,
+    participantName: item.description,
+    teamName: "",
+    value: item.quantitySold,
+  }));
 }
 
 export function DashboardPage() {
@@ -75,6 +95,46 @@ export function DashboardPage() {
             <Divider mb="lg" />
 
             <TeamConsumptionChart teams={insightsQuery.data?.teamConsumption ?? []} />
+          </Slide>
+        </Carousel.Slide>
+
+        <Carousel.Slide>
+          <Slide>
+            <Title order={2} mb="md">
+              Resumo do encontro
+            </Title>
+            <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
+              <RankingBarList
+                title="Top 5 que mais compraram"
+                entries={(insightsQuery.data?.topConsumers ?? []).slice(0, TOP_LIST_LIMIT)}
+                hideValue
+                emptyMessage="Nenhuma compra registrada ainda."
+              />
+              <RankingBarList
+                title="Top 5 que estão devendo mais"
+                entries={(topDebtorsQuery.data ?? []).slice(0, TOP_LIST_LIMIT)}
+                hideValue
+                emptyMessage="Nenhum participante com saldo em aberto."
+              />
+              <RankingBarList
+                title="Top 5 produtos campeões de vendas"
+                entries={productsToRankingEntries(insightsQuery.data?.bestSellingItemsByQuantity)}
+                hideValue
+                emptyMessage="Nenhuma venda registrada ainda."
+              />
+              <RankingBarList
+                title="Top 5 equipes que mais consumiram"
+                entries={teamsToRankingEntries(insightsQuery.data?.topConsumingTeams)}
+                hideValue
+                emptyMessage="Sem dados suficientes ainda."
+              />
+              <RankingBarList
+                title="Top 5 equipes que menos consumiram"
+                entries={teamsToRankingEntries(insightsQuery.data?.leastConsumingTeams)}
+                hideValue
+                emptyMessage="Sem dados suficientes ainda."
+              />
+            </SimpleGrid>
           </Slide>
         </Carousel.Slide>
 

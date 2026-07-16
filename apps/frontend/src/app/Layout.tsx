@@ -104,13 +104,16 @@ export function Layout() {
         <Stack gap={4} style={{ flex: 1 }}>
           {NAV_ITEMS.map((item) => {
             const isActive = location.pathname.startsWith(item.to);
-            const showBadge = item.to === "/alerta-estoque" && Boolean(stockAlerts?.criticalCount);
+            const isStockAlertItem = item.to === "/alerta-estoque";
+            const showCritical = isStockAlertItem && Boolean(stockAlerts?.criticalCount);
+            const showWarning = isStockAlertItem && Boolean(stockAlerts?.warningCount);
+            const showBadge = showCritical || showWarning;
 
             const icon = sidebarOpened ? (
               <item.icon size={18} stroke={1.75} />
             ) : (
               <Indicator
-                color="red"
+                color={showCritical ? "red" : "yellow"}
                 disabled={!showBadge}
                 size={8}
                 offset={2}
@@ -130,9 +133,18 @@ export function Layout() {
                 collapsed={!sidebarOpened}
                 rightSection={
                   sidebarOpened && showBadge ? (
-                    <Badge color="red" size="sm" circle>
-                      {stockAlerts?.criticalCount}
-                    </Badge>
+                    <Group gap={4} wrap="nowrap">
+                      {showCritical && (
+                        <Badge color="red" size="sm" circle>
+                          {stockAlerts?.criticalCount}
+                        </Badge>
+                      )}
+                      {showWarning && (
+                        <Badge color="yellow" size="sm" circle>
+                          {stockAlerts?.warningCount}
+                        </Badge>
+                      )}
+                    </Group>
                   ) : undefined
                 }
               />

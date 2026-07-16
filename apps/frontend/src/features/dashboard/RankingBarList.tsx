@@ -5,11 +5,12 @@ import { motion } from "framer-motion";
 interface RankingBarListProps {
   title: string;
   entries: RankingEntryDto[];
-  formatValue: (value: number) => string;
+  formatValue?: (value: number) => string;
+  hideValue?: boolean;
   emptyMessage?: string;
 }
 
-export function RankingBarList({ title, entries, formatValue, emptyMessage }: RankingBarListProps) {
+export function RankingBarList({ title, entries, formatValue, hideValue, emptyMessage }: RankingBarListProps) {
   const maxValue = Math.max(1, ...entries.map((entry) => entry.value));
 
   return (
@@ -32,9 +33,12 @@ export function RankingBarList({ title, entries, formatValue, emptyMessage }: Ra
             >
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "0.2rem" }}>
                 <span>
-                  {entry.participantName} <span style={{ color: "var(--mantine-color-dimmed)" }}>({entry.teamName})</span>
+                  {entry.participantName}
+                  {entry.teamName && (
+                    <span style={{ color: "var(--mantine-color-dimmed)" }}> ({entry.teamName})</span>
+                  )}
                 </span>
-                <strong>{formatValue(entry.value)}</strong>
+                {!hideValue && <strong>{formatValue?.(entry.value)}</strong>}
               </div>
               <div
                 style={{
